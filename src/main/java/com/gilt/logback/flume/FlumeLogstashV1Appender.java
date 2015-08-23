@@ -141,8 +141,8 @@ public class FlumeLogstashV1Appender extends UnsynchronizedAppenderBase<ILogging
             for (final String segment : segments) {
                 final String[] pair = segment.split("=");
                 if (pair.length == 2) {
-                    final String key = pair[0].trim();
-                    final String value = pair[1].trim();
+                    final String key = StringUtils.strip(pair[0]);
+                    final String value = StringUtils.strip(pair[1]);
                     if (StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(value)) {
                         props.put(key, value);
                     } else {
@@ -177,19 +177,11 @@ public class FlumeLogstashV1Appender extends UnsynchronizedAppenderBase<ILogging
             try {
                 String body = layout != null ? layout.doLayout(eventObject) : eventObject.getFormattedMessage();
                 Map<String, String> headers = new HashMap<String, String>();
-                if (additionalAvroHeaders != null) {
+                if(additionalAvroHeaders != null) {
                     headers.putAll(additionalAvroHeaders);
                 }
                 headers.putAll(extractHeaders(eventObject));
 
-
-                //Event event = EventBuilder.withBody(body.trim(), UTF_8, headers);
-        /*
-        FIX-01: trim() will cause the character that not greater than '\u0020' to be trimmed. Not only the whitespace(more details, refer the String.trim()).
-        This may cause some characters lost that passed by the flume.
-        Suppose we pass the record ("\007Foo\007Jack\007Shenzhen") with 4 fields delimited by '\007' and the first field is empty now, if we use the trim() here,
-        in the flume event body, we only can get 3 fields ("Foo\007Jack\007Shenzhen"), which should be not as expected.
-         */
                 Event event = EventBuilder.withBody(body, UTF_8, headers);
 
                 flumeManager.send(event);
